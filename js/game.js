@@ -10,6 +10,11 @@ const Game = (() => {
   let fallAcc = 0;
   let gravityAcc = 0;
   let clearAcc = 0;
+  let rotateAcc = 0;
+  /** @type {boolean|null} true = CW, false = CCW */
+  let rotateClockwise = null;
+  /** Visual rotation angle in radians while animating */
+  let rotateAngle = 0;
   /** @type {Set<string>|null} */
   let flashSet = null;
   let flashPhase = 0;
@@ -17,6 +22,10 @@ const Game = (() => {
   let pendingClearCells = null;
   let lastTs = 0;
   let rafId = 0;
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
 
   const scoreEl = () => document.getElementById('score');
   const chainEl = () => document.getElementById('chain');
@@ -53,6 +62,9 @@ const Game = (() => {
     fallAcc = 0;
     gravityAcc = 0;
     clearAcc = 0;
+    rotateAcc = 0;
+    rotateClockwise = null;
+    rotateAngle = 0;
     flashSet = null;
     flashPhase = 0;
     pendingClearCells = null;
@@ -105,6 +117,15 @@ const Game = (() => {
   function rotateField(clockwise) {
     if (state !== GameState.PLAYING || !activeCells) return;
 
+    rotateClockwise = clockwise;
+    rotateAcc = 0;
+    rotateAngle = 0;
+    fallAcc = 0;
+    setState(GameState.ROTATING);
+  }
+
+  function applyLogicalRotation() {
+    const clockwise = rotateClockwise === true;
     const rotateGrid = clockwise
       ? Board.rotateClockwise
       : Board.rotateCounterClockwise;
@@ -113,12 +134,20 @@ const Game = (() => {
       : Board.transformCellCCW;
 
     grid = rotateGrid(grid);
-    activeCells = activeCells.map((cell) => {
-      const t = transformCell(cell.x, cell.y);
-      return { x: t.x, y: t.y, color: cell.color };
-    });
+    if (activeCells) {
+      activeCells = activeCells.map((cell) => {
+        const t = transformCell(cell.x, cell.y);
+        return { x: t.x, y: t.y, color: cell.color };
+      });
+    }
 
-    fallAcc = 0;
+    rotateClockwise = null;
+    rotateAngle = 0;
+    rotateAcc = 0;
+  }
+
+  function finishRotateAnim() {
+    applyLogicalRotation();
     beginFalling();
   }
 
@@ -236,6 +265,18 @@ const Game = (() => {
       return;
     }
 
+    if (state === GameState.ROTATING) {
+      rotateAcc += dt;
+      const t = Math.min(1, rotateAcc / ROTATE_ANIM_MS);
+      const eased = easeInOutCubic(t);
+      const dir = rotateClockwise ? 1 : -1;
+      rotateAngle = dir * (Math.PI / 2) * eased;
+      if (t >= 1) {
+        finishRotateAnim();
+      }
+      return;
+    }
+
     if (state === GameState.FALLING) {
       gravityAcc += dt;
       while (gravityAcc >= GRAVITY_STEP_MS) {
@@ -264,7 +305,7 @@ const Game = (() => {
     lastTs = ts;
 
     update(dt);
-    Renderer.draw(grid, { flashSet, flashPhase });
+    Renderer.draw(grid, { flashSet, flashPhase, rotateAngle });
     rafId = requestAnimationFrame(loop);
   }
 

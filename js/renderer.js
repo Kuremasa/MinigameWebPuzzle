@@ -53,14 +53,7 @@ const Renderer = (() => {
     ctx.closePath();
   }
 
-  /**
-   * @param {number[][]} grid
-   * @param {{ cells?: {x:number,y:number}[], flashSet?: Set<string>, flashPhase?: number } | null} options
-   */
-  function draw(grid, options = {}) {
-    if (!ctx) return;
-    const { flashSet = null, flashPhase = 0 } = options;
-
+  function drawBoardContents(grid, flashSet, flashPhase) {
     ctx.fillStyle = BOARD_INNER;
     ctx.fillRect(0, 0, logicalSize, logicalSize);
 
@@ -96,6 +89,51 @@ const Renderer = (() => {
         drawCell(x, y, color, alpha);
       }
     }
+  }
+
+  /**
+   * @param {number[][]} grid
+   * @param {{
+   *   flashSet?: Set<string>|null,
+   *   flashPhase?: number,
+   *   rotateAngle?: number,
+   * }} options rotateAngle is radians; positive = clockwise visual spin
+   */
+  function draw(grid, options = {}) {
+    if (!ctx) return;
+    const {
+      flashSet = null,
+      flashPhase = 0,
+      rotateAngle = 0,
+    } = options;
+
+    // Clear full canvas (covers corners exposed during rotation)
+    ctx.save();
+    ctx.setTransform(
+      window.devicePixelRatio || 1,
+      0,
+      0,
+      window.devicePixelRatio || 1,
+      0,
+      0
+    );
+    ctx.fillStyle = GRID_BG;
+    ctx.fillRect(0, 0, logicalSize, logicalSize);
+    ctx.restore();
+
+    if (rotateAngle !== 0) {
+      const cx = logicalSize / 2;
+      const cy = logicalSize / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rotateAngle);
+      ctx.translate(-cx, -cy);
+      drawBoardContents(grid, flashSet, flashPhase);
+      ctx.restore();
+      return;
+    }
+
+    drawBoardContents(grid, flashSet, flashPhase);
   }
 
   return { init, draw, resize };
