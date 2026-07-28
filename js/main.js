@@ -9,5 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   Renderer.init(canvas);
   Game.bindInput();
-  Game.start();
+
+  Renderer.loadImages().then(() => {
+    Game.start();
+  });
 });

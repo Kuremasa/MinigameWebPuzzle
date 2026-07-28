@@ -13,6 +13,15 @@ const COLORS = Object.freeze([
   '#f1c40f',
 ]);
 
+/** Sprite paths for colors 1..4 (red, blue, green, yellow) */
+const BLOCK_IMAGE_SRCS = Object.freeze([
+  '',
+  'images/block-red.png',
+  'images/block-blue.png',
+  'images/block-green.png',
+  'images/block-yellow.png',
+]);
+
 const GRID_BG = '#0a0e14';
 const GRID_LINE = '#1c2738';
 const BOARD_INNER = '#111822';

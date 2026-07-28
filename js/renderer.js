@@ -4,12 +4,43 @@ const Renderer = (() => {
   let canvas = null;
   let ctx = null;
   let logicalSize = GRID_SIZE * CELL_SIZE;
+  /** @type {(HTMLImageElement|null)[]} index 0 unused; 1..4 sprites */
+  let blockImages = [null, null, null, null, null];
+  let imagesReady = false;
 
   function init(canvasEl) {
     canvas = canvasEl;
     ctx = canvas.getContext('2d');
     resize();
     window.addEventListener('resize', resize);
+  }
+
+  /**
+   * Load block sprites. Resolves when all are ready (or failed).
+   * @returns {Promise<void>}
+   */
+  function loadImages() {
+    const tasks = [];
+    for (let i = 1; i <= COLOR_COUNT; i++) {
+      tasks.push(
+        new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            blockImages[i] = img;
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn('Failed to load block image:', BLOCK_IMAGE_SRCS[i]);
+            blockImages[i] = null;
+            resolve();
+          };
+          img.src = BLOCK_IMAGE_SRCS[i];
+        })
+      );
+    }
+    return Promise.all(tasks).then(() => {
+      imagesReady = blockImages.slice(1).some((img) => img != null);
+    });
   }
 
   function resize() {
@@ -21,7 +52,7 @@ const Renderer = (() => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function drawCell(x, y, colorIndex, alpha = 1) {
+  function drawCellFallback(x, y, colorIndex, alpha) {
     const px = x * CELL_SIZE;
     const py = y * CELL_SIZE;
     const pad = 1.5;
@@ -33,12 +64,23 @@ const Renderer = (() => {
     const r = 4;
     roundRect(px + pad, py + pad, size, size, r);
     ctx.fill();
+    ctx.globalAlpha = 1;
+  }
 
-    // subtle highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    roundRect(px + pad + 2, py + pad + 2, size * 0.45, size * 0.28, 2);
-    ctx.fill();
+  function drawCell(x, y, colorIndex, alpha = 1) {
+    const img = blockImages[colorIndex];
+    const px = x * CELL_SIZE;
+    const py = y * CELL_SIZE;
+    const pad = 1;
+    const size = CELL_SIZE - pad * 2;
 
+    if (!img) {
+      drawCellFallback(x, y, colorIndex, alpha);
+      return;
+    }
+
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, px + pad, py + pad, size, size);
     ctx.globalAlpha = 1;
   }
 
@@ -83,7 +125,6 @@ const Renderer = (() => {
 
         let alpha = 1;
         if (flashSet && flashSet.has(`${x},${y}`)) {
-          // blink between ~0.25 and 1
           alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(flashPhase * Math.PI * 6));
         }
         drawCell(x, y, color, alpha);
@@ -136,5 +177,5 @@ const Renderer = (() => {
     drawBoardContents(grid, flashSet, flashPhase);
   }
 
-  return { init, draw, resize };
+  return { init, loadImages, draw, resize, isReady: () => imagesReady };
 })();
