@@ -1,0 +1,184 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  background: linear-gradient(165deg, #1a2332 0%, #0d1219 55%, #151c28 100%);
+  color: #e8eef6;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  gap: 10px;
+}
+
+#hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 6px 2px;
+  flex-shrink: 0;
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-item:last-child {
+  align-items: flex-end;
+}
+
+.hud-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #8fa3bc;
+  font-weight: 600;
+}
+
+#score,
+#chain {
+  font-size: 1.55rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: #f4f7fb;
+}
+
+#board-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-canvas {
+  width: min(100%, calc(100dvh - 200px));
+  height: auto;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  display: block;
+  border-radius: 8px;
+  background: #0a0e14;
+  box-shadow: 0 0 0 2px #2a3a52, 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(8, 12, 20, 0.82);
+  border-radius: 8px;
+  z-index: 2;
+}
+
+#overlay.hidden {
+  display: none;
+}
+
+#overlay-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ff6b6b;
+}
+
+#overlay-score {
+  font-size: 1.05rem;
+  color: #c5d4e8;
+}
+
+#btn-restart {
+  margin-top: 8px;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  background: #3d8bfd;
+  color: #fff;
+  cursor: pointer;
+}
+
+#btn-restart:active {
+  transform: scale(0.97);
+  background: #2f6fd0;
+}
+
+#controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.ctrl-btn {
+  height: 72px;
+  border: none;
+  border-radius: 14px;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #e8eef6;
+  background: #243447;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s, transform 0.08s;
+}
+
+.ctrl-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ctrl-drop {
+  background: #2c5a8a;
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+@media (max-height: 700px) {
+  .ctrl-btn {
+    height: 60px;
+    font-size: 1.7rem;
+  }
+
+  #score,
+  #chain {
+    font-size: 1.3rem;
+  }
+}

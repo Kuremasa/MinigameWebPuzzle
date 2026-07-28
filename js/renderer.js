@@ -1,0 +1,102 @@
+'use strict';
+
+const Renderer = (() => {
+  let canvas = null;
+  let ctx = null;
+  let logicalSize = GRID_SIZE * CELL_SIZE;
+
+  function init(canvasEl) {
+    canvas = canvasEl;
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+  }
+
+  function resize() {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    logicalSize = GRID_SIZE * CELL_SIZE;
+    canvas.width = Math.floor(logicalSize * dpr);
+    canvas.height = Math.floor(logicalSize * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawCell(x, y, colorIndex, alpha = 1) {
+    const px = x * CELL_SIZE;
+    const py = y * CELL_SIZE;
+    const pad = 1.5;
+    const size = CELL_SIZE - pad * 2;
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = COLORS[colorIndex] || '#888';
+
+    const r = 4;
+    roundRect(px + pad, py + pad, size, size, r);
+    ctx.fill();
+
+    // subtle highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    roundRect(px + pad + 2, py + pad + 2, size * 0.45, size * 0.28, 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+  }
+
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  /**
+   * @param {number[][]} grid
+   * @param {{ cells?: {x:number,y:number}[], flashSet?: Set<string>, flashPhase?: number } | null} options
+   */
+  function draw(grid, options = {}) {
+    if (!ctx) return;
+    const { flashSet = null, flashPhase = 0 } = options;
+
+    ctx.fillStyle = BOARD_INNER;
+    ctx.fillRect(0, 0, logicalSize, logicalSize);
+
+    // grid lines
+    ctx.strokeStyle = GRID_LINE;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= GRID_SIZE; i++) {
+      const p = i * CELL_SIZE + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(p, 0);
+      ctx.lineTo(p, logicalSize);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, p);
+      ctx.lineTo(logicalSize, p);
+      ctx.stroke();
+    }
+
+    // center spawn hint (subtle)
+    ctx.fillStyle = 'rgba(61, 139, 253, 0.06)';
+    ctx.fillRect(6 * CELL_SIZE, 6 * CELL_SIZE, 3 * CELL_SIZE, 3 * CELL_SIZE);
+
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const color = grid[y][x];
+        if (color === 0) continue;
+
+        let alpha = 1;
+        if (flashSet && flashSet.has(`${x},${y}`)) {
+          // blink between ~0.25 and 1
+          alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(flashPhase * Math.PI * 6));
+        }
+        drawCell(x, y, color, alpha);
+      }
+    }
+  }
+
+  return { init, draw, resize };
+})();
